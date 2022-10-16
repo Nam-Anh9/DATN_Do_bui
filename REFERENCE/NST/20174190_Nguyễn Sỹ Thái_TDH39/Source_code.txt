@@ -1,0 +1,333 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <DHT.h>
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
+
+#define DHT_SENSOR_PIN  16 // ESP32 pin GIOP21 connected to DHT22 sensor
+#define FAN_PIN 26 // fan pin
+#define OLED_POWER_PIN 27 // oled power control pin
+#define BUZZ_PIN 18 // buzz pin
+#define WAKE_UP_PIN 4 // wake up pin
+#define BLE_ADV_PIN 2 // ble pin
+#define SHARP_LED_PIN 22 // dust led pin
+#define SHARP_SENSOR_PIN 39 // dust adc pin
+#define VBAT_PIN 25 // battery adc pin
+#define CHARGE_STATUS_PIN 5 // battery charge detect pin
+#define SENSOR_POWER_PIN 19 //  sensor power control pin
+
+#define TIME_TO_SLEEP  5        //Thời gian thức dậy
+#define WATCHDOG_TIMEOUT_S 3
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID_1 "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define CHARACTERISTIC_UUID_2 "fa0c8978-18a4-11ed-861d-0242ac120002"
+
+#define SCREEN_WIDTH 128 // OLED width,  in pixels
+#define SCREEN_HEIGHT 64 // OLED height, in pixels
+#define DHT_SENSOR_TYPE DHT22
+
+
+DHT dht_sensor(DHT_SENSOR_PIN, DHT_SENSOR_TYPE);
+Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+//-----------------variants define-----------------
+#define N 100
+static unsigned long VoRawTotal = 0;
+static int VoRawCount = 0;
+static float Voc = 0.6;
+const float K = 0.5;
+
+hw_timer_t * watchDogTimer = NULL;
+//-----------------functions-----------------------
+void IRAM_ATTR watchDogInterrupt() {
+  Serial.println("reboot");
+  ESP.restart();
+}
+void IRAM_ATTR startAdvertising()
+{
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+}
+void watchDogRefresh(){
+  timerWrite(watchDogTimer, 0);                    //reset timer (feed watchdog)
+}
+
+boolean charge_status(){
+  boolean s = digitalRead(CHARGE_STATUS_PIN);
+  if (s==0) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+float bat_capacity(){
+  int value = analogRead(VBAT_PIN);
+  float cap = (float)value*3.3/4095;
+  return cap;
+}
+
+void power_oled_ctrl(boolean x){
+  if (x==0) {
+    digitalWrite(OLED_POWER_PIN,1);
+  }
+  else{
+    digitalWrite(OLED_POWER_PIN,0);
+  }
+}
+
+void power_sensor_ctrl(boolean x){
+    digitalWrite(SENSOR_POWER_PIN,x);
+}
+
+void fan_on() {
+  Serial.println("fan is on");
+  digitalWrite(FAN_PIN, HIGH);
+  delay (3000);
+  Serial.println("fan is off");
+  digitalWrite(FAN_PIN, LOW);
+}
+
+void buzz_on() {
+  Serial.println("buzz is on");
+  digitalWrite(BUZZ_PIN, HIGH);
+  delay (500);
+  digitalWrite(BUZZ_PIN, LOW);
+  delay (100);
+  digitalWrite(BUZZ_PIN, HIGH);
+  delay (500);
+  digitalWrite(BUZZ_PIN, LOW);
+  delay (100);
+  digitalWrite(BUZZ_PIN, HIGH);
+  delay (500);
+  digitalWrite(BUZZ_PIN, LOW);
+  Serial.println("buzz is off");
+}
+
+void dht_write_serial() {
+  // read humidity
+  float humi  = dht_sensor.readHumidity();
+  // read temperature in Celsius
+  float tempC = dht_sensor.readTemperature();
+
+  // check whether the reading is successful or not
+  if ( isnan(tempC) || isnan(humi)) {
+    Serial.println("Failed to read from DHT sensor!");
+  } else {
+    Serial.print("Humidity: ");
+    Serial.print(humi);
+    Serial.print("%");
+
+    Serial.print("  |  ");
+
+    Serial.print("Temperature: ");
+    Serial.print(tempC);
+    Serial.println("°C  ~  ");
+    Serial.println("end dht");
+  }
+}
+
+float dust_read() {
+  for(int i=1;i<101;i++){
+      // Turn on the dust sensor LED by setting digital pin LOW.
+    digitalWrite(SHARP_LED_PIN, LOW);
+
+  // Wait 0.28ms before taking a reading of the output voltage as per spec.
+    delayMicroseconds(280);
+
+  // Record the output voltage. This operation takes around 100 microseconds.
+    int VoRaw = analogRead(SHARP_SENSOR_PIN);
+  
+  // Turn the dust sensor LED off by setting digital pin HIGH.
+    digitalWrite(SHARP_LED_PIN, HIGH);
+
+  // Wait for remainder of the 10ms cycle = 10000 - 280 - 100 microseconds.
+    delayMicroseconds(9620);
+
+    VoRawTotal += VoRaw;
+    VoRawCount++;
+  }
+  float Vo;
+  if ( VoRawCount >= N ) {
+    Vo = 1.0 * VoRawTotal / N;
+    VoRawCount = 0;
+    VoRawTotal = 0;
+  } 
+  
+  Vo = Vo / 1024.0 * 5.0;
+  Serial.print("Vo =");
+  Serial.print(Vo*1000.0);
+  Serial.print("mV, ");
+  float dV = Vo - Voc;
+  if ( dV < 0 ) {
+    dV = 0;
+    Voc = Vo;
+  }
+  float dustDensity = dV / K * 100.0;
+  Serial.print("Dust Density =");
+  Serial.print(Vo*1000.0);
+  Serial.println("ug/m3");
+  return dustDensity;
+}
+void oled_write(float batCap, int chargeState, float temp, float humid, float dust, int crossState ){
+    oled.clearDisplay(); // clear display
+    oled.setTextSize(1);         // set text size
+    oled.setTextColor(WHITE);    // set text color
+    oled.setCursor(0, 0);       // set position to display
+    //---------------------------    
+    oled.print("Pin: ");
+    oled.print(batCap);
+    oled.print("%");
+    if (chargeState == 1)
+    {
+    oled.println(" - dang sac");
+    }
+    else
+    {
+    oled.println(" ");
+    }
+    //---------------------------
+    oled.print("Nhiet do: ");
+    oled.print(temp);
+    oled.println("*C");  
+    //---------------------------
+    oled.print("Do am: ");
+    oled.print(humid);
+    oled.println("%");
+    //---------------------------
+    oled.print("PMx: ");
+    oled.print(dust);
+    oled.print("ug/m3");
+    if (crossState == 1)
+    {
+      oled.println(" - nguy hiem");
+    }
+    else
+    {
+      oled.println(" ");
+    }
+    //---------------------------
+    oled.display();              // display on OLED
+}
+
+void print_wakeup_reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : 
+      Serial.println("Wakeup caused by external signal using RTC_IO"); 
+      break;
+    case ESP_SLEEP_WAKEUP_TIMER : 
+      Serial.println("Wakeup caused by timer"); 
+      break;
+    default : 
+      Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); 
+      break;
+  }
+}
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Start");
+  //------------------Sleep setup--------------------
+  print_wakeup_reason();
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * 60000000);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_4,0);
+  //------------------watchdog setup-----------------
+  watchDogTimer = timerBegin(2, 80, true);
+  timerAttachInterrupt(watchDogTimer, &watchDogInterrupt, true);
+  timerAlarmWrite(watchDogTimer, WATCHDOG_TIMEOUT_S * 1000000, false);
+  timerAlarmEnable(watchDogTimer);
+
+  //------------------initializing--------------------
+  pinMode(BLE_ADV_PIN, INPUT);
+  attachInterrupt(BLE_ADV_PIN, startAdvertising, FALLING);
+  // initialize FAN
+  pinMode(FAN_PIN, OUTPUT);
+  // initialize DHT22
+  dht_sensor.begin();
+  // initialize Dust Sensor
+  pinMode(SHARP_LED_PIN, OUTPUT);
+  // initialize OLED 
+  if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("failed to start SSD1306 OLED"));
+    while (1);
+  }
+  //------------------initialize done-----------------
+  //------------------Sensing-------------------------
+  fan_on();
+  *float bat = bat_capacity();
+  int chargeState = charge_status();
+  float humi  = dht_sensor.readHumidity();
+  float tempC = dht_sensor.readTemperature();
+  dht_write_serial();
+  float dust = dust_read();
+  int crossState = 0;
+  if (dust > 35) crossState = 1;
+  float bat = 100;
+  int chargeState = charge_status();
+  float humi  = 36.8;
+  float tempC = 28.3;
+  dht_write_serial();
+  float dust = 45;
+  int crossState = 0;
+  if (dust > 35) crossState = 1;
+  //------------------Display--------------
+  oled_write(bat, chargeState, tempC, humi, dust, crossState );
+  //------------------BLE------------------
+  BLEDevice::init("Air Monitor");
+  BLEServer *pServer = BLEDevice::createServer();
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+  BLECharacteristic *pCharacteristic1 = pService->createCharacteristic(
+                                         CHARACTERISTIC_UUID_1,
+                                         BLECharacteristic::PROPERTY_READ |
+                                         BLECharacteristic::PROPERTY_WRITE
+                                       );
+  BLECharacteristic *pCharacteristic2 = pService->createCharacteristic(
+                                         CHARACTERISTIC_UUID_2,
+                                         BLECharacteristic::PROPERTY_READ |
+                                         BLECharacteristic::PROPERTY_WRITE
+                                       );
+  pCharacteristic1->setValue("Pin: ");
+  pCharacteristic1->setValue(bat);
+  pCharacteristic1->setValue("V ");  
+  pCharacteristic1->setValue("PMx: ");
+  pCharacteristic1->setValue(dust);
+  pCharacteristic1->setValue("ug/m3 ");
+  pCharacteristic1->setValue("Temperature: ");
+  pCharacteristic1->setValue(tempC);
+  pCharacteristic1->setValue("oC ");
+  pCharacteristic1->setValue(humi);
+  pCharacteristic1->setValue("% ");  
+  if (crossState)  pCharacteristic1->setValue("% ");  
+  pService->start();
+  startAdvertising();
+  
+  
+
+}
+unsigned long previousMillis = 0;  
+void loop() {
+  //-----------------feed watchdog-------------------
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= 2000) {
+    previousMillis = currentMillis;
+    watchDogRefresh();  
+  }  
+
+  
+  
+  delay(2000);
+  Serial.println("Going to sleep now");
+  delay(1000); 
+  esp_deep_sleep_start();
+  Serial.println("Do not Print");
+}
