@@ -1,5 +1,5 @@
-#ifndef _DHT22_H_
-#define _DHT22_H_
+#ifndef _DHT_22_H_
+#define _DHT_22_H_
 
 #include <inttypes.h>
 
@@ -77,6 +77,6 @@ inline float DHT22::getTemperatureF()
 {
   return float(_lastTemperature) / 10 * 9 / 5 + 32;
 }
-#endif //DHT22_SUPPORT_FLOAT
+#endif //DHT_22_SUPPORT_FLOAT
 
-#endif /*_DHT22_H_*/
+#endif /*_DHT_22_H_*/
