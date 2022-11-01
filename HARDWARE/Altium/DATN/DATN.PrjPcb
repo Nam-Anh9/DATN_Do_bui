@@ -123,7 +123,7 @@ GenerateClassCluster=0
 DocumentUniqueId=JAXCVBXQ
 
 [Document6]
-DocumentPath=Power.SchDoc
+DocumentPath=ICL7107_Test.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
