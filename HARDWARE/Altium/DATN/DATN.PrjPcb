@@ -123,7 +123,7 @@ GenerateClassCluster=0
 DocumentUniqueId=JAXCVBXQ
 
 [Document6]
-DocumentPath=ICL7107_Test.SchDoc
+DocumentPath=Voltage Measurement.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
@@ -140,7 +140,7 @@ GenerateClassCluster=0
 DocumentUniqueId=LWFQDTNE
 
 [Document7]
-DocumentPath=Power_A.SchDoc
+DocumentPath=Power.SchDoc
 AnnotationEnabled=1
 AnnotateStartValue=1
 AnnotationIndexControlEnabled=0
