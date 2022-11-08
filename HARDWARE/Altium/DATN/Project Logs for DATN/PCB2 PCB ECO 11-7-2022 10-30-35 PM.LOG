@@ -1,0 +1,12 @@
+Added Component: Designator=D3(DIODE SMA)
+Add component. Clean all parameters for all variants
+Add component (AddParameter): Name = "Chung_Loai"; Value = "Dán"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Don_Vi"; Value = "Con"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ghi_Chu"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Kieu_Chan"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ma_Hang"; Value = "MH002104"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ten_Linh_Kien"; Value = "Diode SS34 3A 40V SMA ( 1N5822 SS34A)"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=NetD6_1 Pin=D3-1
+Added Pin To Net: NetName=NetC7_1 Pin=D3-2
+Change Net Name : Old Net Name=NetD6_1 New Net Name=NetD3_1
+Added Member To Class: ClassName=U_Power Member=Component D3 SS34
