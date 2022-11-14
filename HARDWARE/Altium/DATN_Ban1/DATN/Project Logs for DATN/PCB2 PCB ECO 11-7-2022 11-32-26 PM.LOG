@@ -1,0 +1,23 @@
+Removed Pin From Net: NetName=JLINK_TMS Pin=JP2-6
+Removed Pin From Net: NetName=JLINK_TDI Pin=JP2-7
+Removed Pin From Net: NetName=JLINK_TCK Pin=JP2-8
+Removed Pin From Net: NetName=JLINK_TDO Pin=JP2-9
+Removed Pin From Net: NetName=5V Pin=R26-2
+Change Component Footprint: Designator=JP2 Old Footprint=JP 1x9 DT New Footprint=JP 1x5 DT
+Change Component Comment : Designator=JP2 Old Comment=JP 1x9 2.54 New Comment=JP 1x5 2.54
+Added Component: Designator=JP3(JP 1x6 DT)
+Add component. Clean all parameters for all variants
+Add component (AddParameter): Name = "Chung_Loai"; Value = "C?m"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Don_Vi"; Value = "Con"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ghi_Chu"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Kieu_Chan"; Value = ""; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ma_Hang"; Value = "MH000903"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Ten_Linh_Kien"; Value = "Jump Ðon Ð?c 2.54MM 1x40P Th?ng 11MM"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=3.3VDC Pin=JP3-1
+Added Pin To Net: NetName=GND Pin=JP3-2
+Added Pin To Net: NetName=JLINK_TMS Pin=JP3-3
+Added Pin To Net: NetName=JLINK_TDI Pin=JP3-4
+Added Pin To Net: NetName=JLINK_TCK Pin=JP3-5
+Added Pin To Net: NetName=JLINK_TDO Pin=JP3-6
+Added Pin To Net: NetName=5VDC Pin=R26-2
+Added Member To Class: ClassName=MCU Member=Component JP3 JP 1x6 2.54

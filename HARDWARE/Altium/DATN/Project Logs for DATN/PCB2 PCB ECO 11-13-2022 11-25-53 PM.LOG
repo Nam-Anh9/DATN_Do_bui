@@ -1,0 +1,7 @@
+Removed Member From Class: ClassName=U_Power Member=R10
+Added Pin To Net: NetName=+3.3V Pin=LED2-K
+Added Pin To Net: NetName=5V Pin=LED3-K
+Added Pin To Net: NetName=5V Pin=LED4-K
+Added Room: Name=MCU
+Added Room: Name=U_Power
+Added Room: Name=U_Sensor

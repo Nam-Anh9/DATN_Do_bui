@@ -1,0 +1,20 @@
+Removed Pin From Net: NetName=NetLED1_2 Pin=R19-2
+Removed Pin From Net: NetName=NetLED2_2 Pin=R25-2
+Removed Pin From Net: NetName=NetLED3_2 Pin=R29-2
+Removed Pin From Net: NetName=NetLED4_2 Pin=R30-2
+Added Pin To Net: NetName=LED Pin=LED1-A
+Added Pin To Net: NetName=NetLED4_2 Pin=LED1-K
+Added Pin To Net: NetName=+3.3V Pin=LED2-A
+Added Pin To Net: NetName=NetLED3_2 Pin=LED2-K
+Added Pin To Net: NetName=5V Pin=LED3-A
+Added Pin To Net: NetName=NetLED2_2 Pin=LED3-K
+Added Pin To Net: NetName=5V Pin=LED4-A
+Added Pin To Net: NetName=NetLED1_2 Pin=LED4-K
+Added Pin To Net: NetName=NetLED4_2 Pin=R19-2
+Added Pin To Net: NetName=NetLED3_2 Pin=R25-2
+Added Pin To Net: NetName=NetLED2_2 Pin=R29-2
+Added Pin To Net: NetName=NetLED1_2 Pin=R30-2
+Change Net Name : Old Net Name=NetLED1_2 New Net Name=NetLED4_K
+Change Net Name : Old Net Name=NetLED2_2 New Net Name=NetLED3_K
+Change Net Name : Old Net Name=NetLED3_2 New Net Name=NetLED2_K
+Change Net Name : Old Net Name=NetLED4_2 New Net Name=NetLED1_K
