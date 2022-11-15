@@ -1,0 +1,6 @@
+Removed Pin From Net: NetName=GPIO33 Pin=U1-9
+Added Pin To Net: NetName=GPIO33 Pin=U1-10
+Change Net Name : Old Net Name=GPIO33 New Net Name=GPIO25
+Added Room: Name=MCU
+Added Room: Name=U_Power
+Added Room: Name=U_Sensor
