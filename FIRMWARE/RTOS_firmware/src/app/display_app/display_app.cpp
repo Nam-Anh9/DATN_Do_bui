@@ -1,7 +1,6 @@
 #include "display_app.h"
 
 SH1106Wire display(0x3c, SDA, SCL);
-DISPLAY_APP display_app;
 
 void OLED_init(){
     display.init();
@@ -41,6 +40,12 @@ void OLED_drawBatteryLogo(){
         display.drawString(20,0,"charge");
     }
 }
+void OLED_display(){
+    display.display();
+}
+void OLED_clearScreen(){
+    display.clear();
+}
 void drawTaskbar(){
     OLED_drawWifiLogo();
     OLED_drawBatteryPercent();
@@ -65,4 +70,3 @@ void drawSecondScreen(){
     display.drawString(0, 20, "Temp:");
     display.drawString(0, 40, "Humi:");
 }
-void swtichScreen();
