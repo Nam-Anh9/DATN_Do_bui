@@ -1,0 +1,15 @@
+Removed Pin From Net: NetName=3.3VDC Pin=JP3-1
+Removed Pin From Net: NetName=GND Pin=JP3-2
+Removed Pin From Net: NetName=JLINK_TMS Pin=JP3-3
+Removed Pin From Net: NetName=JLINK_TDI Pin=JP3-4
+Removed Pin From Net: NetName=JLINK_TCK Pin=JP3-5
+Removed Pin From Net: NetName=JLINK_TDO Pin=JP3-6
+Added Pin To Net: NetName=JLINK_TMS Pin=JP3-1
+Added Pin To Net: NetName=JLINK_TDI Pin=JP3-2
+Added Pin To Net: NetName=JLINK_TCK Pin=JP3-3
+Added Pin To Net: NetName=JLINK_TDO Pin=JP3-4
+Added Pin To Net: NetName=3.3VDC Pin=JP3-5
+Added Pin To Net: NetName=GND Pin=JP3-6
+Added Room: Name=MCU
+Added Room: Name=U_Power
+Added Room: Name=U_Sensor
