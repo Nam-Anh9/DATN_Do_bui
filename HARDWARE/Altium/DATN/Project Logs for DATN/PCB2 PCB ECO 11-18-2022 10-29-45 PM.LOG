@@ -1,0 +1,11 @@
+Removed Pin From Net: NetName=GND Pin=JP?-1
+Removed Pin From Net: NetName=5VDC Pin=JP?-2
+Removed Pin From Net: NetName=RXD_Dust Pin=JP?-3
+Removed Pin From Net: NetName=TXD_Dust Pin=JP?-4
+Change Component Designator: OldDesignator=JP? NewDesignator=JP4
+Added Pin To Net: NetName=TXD_Dust Pin=JP4-1
+Added Pin To Net: NetName=RXD_Dust Pin=JP4-2
+Added Pin To Net: NetName=5VDC Pin=JP4-3
+Added Pin To Net: NetName=GND Pin=JP4-4
+Added Room: Name=MCU
+Added Room: Name=U_Power

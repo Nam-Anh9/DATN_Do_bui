@@ -1,0 +1,4 @@
+Change Component Footprint: Designator=JP1 Old Footprint=JP 1x4 CT - OLED New Footprint=JP 1x4 CT
+Added Room: Name=MCU
+Added Room: Name=U_Power
+Added Room: Name=U_Sensor
