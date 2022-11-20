@@ -1,7 +1,9 @@
 #include "display_app.h"
-
+#include <string.h>
 SH1106Wire display(0x3c, SDA, SCL);
-
+DISPLAY_APP display_app = {
+    .battert_percent = 0
+};
 void OLED_init(){
     display.init();
     display.flipScreenVertically();
@@ -12,9 +14,7 @@ void OLED_drawWifiLogo(){
     DISPLAY_APP *pw = &display_app;
     if(pw->wifi_status)
     {
-        display.setFont(ArialMT_Plain_16);
-        display.setTextAlignment(TEXT_ALIGN_LEFT);
-        display.drawString(0,0,"...");
+        display.drawXbm(0,0, WiFi_Logo_width, WiFi_Logo_height, WiFi_Logo_bits);
     }
     else
     {
@@ -53,13 +53,18 @@ void drawTaskbar(){
 }
 void drawFirstScreen(){
     drawTaskbar();
+    MEASURE_APP *pw = &measure_app;
+    String PM_10 = "PM10:";
+    String PM_2_5 = "PM2.5:";
+    PM_10 += pw->pmsData.PMS_10;
+    PM_2_5 += pw->pmsData.PMS_2_5;
     display.setFont(ArialMT_Plain_16);
 
     // The coordinates define the left starting point of the text
     display.setTextAlignment(TEXT_ALIGN_LEFT);
     display.drawString(0, 20, "AQI:");
-    display.drawString(0, 40, "PM2.5:");
-    display.drawString(55, 20, "PM10:");
+    display.drawString(0, 40, PM_2_5);
+    display.drawString(55, 20, PM_10);
 }
 void drawSecondScreen(){
     drawTaskbar();

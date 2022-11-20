@@ -1,9 +1,10 @@
-#ifndef DISPLAY_APP_h
-#define DISPLAY_APP_h
+#ifndef APP_DISPLAY_APP_DISPLAY_APP_H
+#define APP_DISPLAY_APP_DISPLAY_APP_H
 
 #include <Wire.h>
 #include "SH1106Wire.h"
 #include "images.h"
+#include "app/measure_app/measure_app.h"
 #define CHANGE_DURATION 3000
 
 typedef struct DISPLAY_APP_t DISPLAY_APP;
