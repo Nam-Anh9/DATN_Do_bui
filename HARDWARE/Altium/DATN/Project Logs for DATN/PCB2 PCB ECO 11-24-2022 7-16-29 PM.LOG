@@ -1,0 +1,15 @@
+Removed Pin From Net: NetName=5VDC Pin=FB1-2
+Removed Pin From Net: NetName=3.3VDC Pin=FB2-2
+Removed Member From Class: ClassName=U_Power Member=FB1
+Removed Member From Class: ClassName=U_Power Member=FB2
+Added Pin To Net: NetName=5VDC Pin=C8-1
+Added Pin To Net: NetName=3.3VDC Pin=C11-1
+Added Pin To Net: NetName=3.3VDC Pin=C12-1
+Added Pin To Net: NetName=5VDC Pin=D1-2
+Added Pin To Net: NetName=3.3VDC Pin=IC6-2
+Added Pin To Net: NetName=5VDC Pin=IC6-3
+Added Pin To Net: NetName=3.3VDC Pin=LED2-A
+Added Pin To Net: NetName=5VDC Pin=Q2-3
+Added Room: Name=MCU
+Added Room: Name=U_Power
+Added Room: Name=U_Sensor

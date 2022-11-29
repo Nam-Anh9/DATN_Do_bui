@@ -1,0 +1,11 @@
+Added Component: Designator=IC9(SOP8)
+Add component. Clean all parameters for all variants
+Added Pin To Net: NetName=GND Pin=IC9-1
+Added Pin To Net: NetName=NetIC9_2 Pin=IC9-2
+Added Pin To Net: NetName=GND Pin=IC9-3
+Added Pin To Net: NetName=5V Pin=IC9-4
+Added Pin To Net: NetName=4.2V Pin=IC9-5
+Added Pin To Net: NetName=NetIC9_6 Pin=IC9-6
+Added Pin To Net: NetName=NetIC9_7 Pin=IC9-7
+Added Pin To Net: NetName=5V Pin=IC9-8
+Added Member To Class: ClassName=U_Power Member=Component IC9 TP4056 1A
