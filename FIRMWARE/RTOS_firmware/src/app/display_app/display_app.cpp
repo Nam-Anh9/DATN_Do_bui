@@ -68,10 +68,17 @@ void drawFirstScreen(){
 }
 void drawSecondScreen(){
     drawTaskbar();
+    MEASURE_APP* pw = &measure_app;
+    String Temp = "Temp: ";
+    String Humi = "Humi: ";
+    Temp += pw->dht22Data.Temperature;
+    Humi += pw->dht22Data.Humidity;
+    Temp += " oC";
+    Humi += " %";
     display.setFont(ArialMT_Plain_16);
 
     // The coordinates define the left starting point of the text
     display.setTextAlignment(TEXT_ALIGN_LEFT);
-    display.drawString(0, 20, "Temp:");
-    display.drawString(0, 40, "Humi:");
+    display.drawString(0, 20, Temp);
+    display.drawString(0, 40, Humi);
 }
