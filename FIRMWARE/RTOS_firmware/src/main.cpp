@@ -5,11 +5,11 @@
 
 TaskHandle_t Task1;
 TaskHandle_t Task2;
-TaskHandle_t Task3;
+//TaskHandle_t Task3;
 SemaphoreHandle_t xSerialSemaphore;
 void display_task(void *pvParameters);
 void measure_task(void *pvParameters);
-void power_task(void *pvParameters);
+//void power_task(void *pvParameters);
 
 const char* ssid = "Song Quynh";
 const char* password = "songquynh25042112";
@@ -41,7 +41,7 @@ void setup() {
   }
   xTaskCreatePinnedToCore(measure_task,"Task2", 10000, NULL, 1, &Task2, 1);
   xTaskCreatePinnedToCore(display_task,"Task1", 10000, NULL, 2, &Task1, 0);
-  xTaskCreatePinnedToCore(power_task,"Task3", 10000, NULL, 3, &Task3, 2);
+  //xTaskCreatePinnedToCore(power_task,"Task3", 10000, NULL, 3, &Task3, 2);
   delay(500);
 }
 
@@ -88,7 +88,7 @@ void measure_task (void *pvParameters)
     // If the semaphore is not available, wait 5 ticks of the Scheduler to see if it becomes free.
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
     { 
-
+      GPIO_NUM_13;
       // PMS7003 Task Excute
       //vTaskDelay(300);
       measure_app.dht22Data.delay();
@@ -100,32 +100,30 @@ void measure_task (void *pvParameters)
       Serial.print("Temperature: ");
       Serial.println(measure_app.dht22Data.Temperature);
 
-      // Serial.print("PM 2.5 (ug/m3): ");
-      // Serial.println(measure_app.pmsData.PMS_2_5);
+      Serial.print("PM 2.5 (ug/m3): ");
+      Serial.println(measure_app.pmsData.PMS_2_5);
 
-      // Serial.print("PM 10.0 (ug/m3): ");
-      // Serial.println(measure_app.pmsData.PMS_1_0);
-      // Serial.println(measure_app.PM_10);
-      // Serial.println(measure_app.PM_2_5);
+      Serial.print("PM 10.0 (ug/m3): ");
+      Serial.println(measure_app.pmsData.PMS_1_0);
       xSemaphoreGive(xSerialSemaphore);
     }
     vTaskDelay(10);
   }
 }
 
-void power_task (void *pvParameters)
-{
-  (void) pvParameters;
+// void power_task (void *pvParameters)
+// {
+//   (void) pvParameters;
 
-  for(;;)
-  {
-    if(xSemaphoreTake(xSerialSemaphore, (TickType_t) 5) == pdTRUE)
-    { 
-      vTaskDelay(10);
-      xSemaphoreGive (xSerialSemaphore);
-    }
-  }
-}
+//   for(;;)
+//   {
+//     if(xSemaphoreTake(xSerialSemaphore, (TickType_t) 5) == pdTRUE)
+//     { 
+//       vTaskDelay(10);
+//       xSemaphoreGive (xSerialSemaphore);
+//     }
+//   }
+// }
 void loop() {
   // put your main code here, to run repeatedly:
 }

@@ -6,7 +6,7 @@
 #include "DHT22.h"
 
 #define PMS_SERIAL Serial2 
-#define DHT_PIN 23
+#define DHT_PIN 33
 
 typedef struct MEASURE_APP_t MEASURE_APP;
 
