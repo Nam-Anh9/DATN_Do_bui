@@ -88,7 +88,6 @@ void measure_task (void *pvParameters)
     // If the semaphore is not available, wait 5 ticks of the Scheduler to see if it becomes free.
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 5 ) == pdTRUE )
     { 
-      GPIO_NUM_13;
       // PMS7003 Task Excute
       //vTaskDelay(300);
       measure_app.dht22Data.delay();
