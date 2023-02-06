@@ -17,15 +17,29 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   PMS_SERIAL.begin(9600);
-  //Serial.print("Connecting to wifi");
-  //Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  WiFi.mode(WIFI_AP_STA);
+  /* start SmartConfig */
+  WiFi.beginSmartConfig();
+ 
+  /* Wait for SmartConfig packet from mobile */
+  Serial.println("Waiting for SmartConfig.");
+  while (!WiFi.smartConfigDone()) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("SmartConfig done.");
+ 
+  /* Wait for WiFi to connect to AP */
+  Serial.println("Waiting for WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
     display_app.wifi_status = 0;
   }
+  Serial.println("WiFi Connected.");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
   // Serial.println("");
   // Serial.println("WiFi connected.");
   // Serial.println("IP address: ");
@@ -43,10 +57,11 @@ void setup() {
   xTaskCreatePinnedToCore(display_task,"Task1", 10000, NULL, 2, &Task1, 0);
   //xTaskCreatePinnedToCore(power_task,"Task3", 10000, NULL, 3, &Task3, 2);
   delay(500);
+
 }
 
 void display_task(void *pvParameters)
-{
+{ 
   (void) pvParameters;
 
   // Serial.print("display_task is running on core");
@@ -73,12 +88,14 @@ void display_task(void *pvParameters)
     }
 
     vTaskDelay(10);
+
   }
 }
 
 void measure_task (void *pvParameters)
 {
   (void) pvParameters;
+
   // Serial.print("measure_task is running on core");
   // Serial.println(xPortGetCoreID());
   measure_app.pmsData.init();
@@ -94,19 +111,20 @@ void measure_task (void *pvParameters)
       measure_app.pmsData.readData();
 
       measure_app.dht22Data.getstatus();
-      Serial.print("Humidity: ");
-      Serial.println(measure_app.dht22Data.Humidity);
-      Serial.print("Temperature: ");
-      Serial.println(measure_app.dht22Data.Temperature);
+      // Serial.print("Humidity: ");
+      // Serial.println(measure_app.dht22Data.Humidity);
+      // Serial.print("Temperature: ");
+      // Serial.println(measure_app.dht22Data.Temperature);
 
-      Serial.print("PM 2.5 (ug/m3): ");
-      Serial.println(measure_app.pmsData.PMS_2_5);
+      // Serial.print("PM 2.5 (ug/m3): ");
+      // Serial.println(measure_app.pmsData.PMS_2_5);
 
-      Serial.print("PM 10.0 (ug/m3): ");
-      Serial.println(measure_app.pmsData.PMS_1_0);
+      // Serial.print("PM 10.0 (ug/m3): ");
+      // Serial.println(measure_app.pmsData.PMS_1_0);
       xSemaphoreGive(xSerialSemaphore);
     }
     vTaskDelay(10);
+
   }
 }
 
