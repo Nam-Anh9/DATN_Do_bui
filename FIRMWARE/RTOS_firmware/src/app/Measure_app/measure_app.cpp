@@ -135,11 +135,8 @@ static void DHT_Delay() {
 
 static void DHT_GetStatus() {
   MEASURE_APP* pw = &measure_app;
-  if (dht.getHumidity() <= 100)
-  {
-    pw->dht22Data.Humidity = dht.getHumidity();
-    pw->dht22Data.Temperature = dht.getTemperature();
-  }
+  pw->dht22Data.Humidity = dht.getHumidity();
+  pw->dht22Data.Temperature = dht.getTemperature();
 }
 MEASURE_APP measure_app = {
     .pmsData = {

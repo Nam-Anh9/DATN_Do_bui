@@ -15,8 +15,8 @@ void display_task(void *pvParameters);
 void measure_task(void *pvParameters);
 void upload_task(void *pvParameters);
 
-const char* ssid = "Nha 38C";
-const char* password = "123456789";
+const char* ssid = "iPhone";
+const char* password = "abc123456789";
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -53,14 +53,14 @@ void setup() {
   if(xSerialSemaphore == NULL)
   {
     xSerialSemaphore = xSemaphoreCreateCounting(3,3);
-    if((xSerialSemaphore) != NULL)
+    if(xSerialSemaphore != NULL)
     {
       xSemaphoreGive((xSerialSemaphore));
     }
   }
-  xTaskCreatePinnedToCore(measure_task,"Task2", 10000, NULL, 5, &Task2, 0);
-  xTaskCreatePinnedToCore(display_task,"Task1", 10000, NULL, 5, &Task1, 0);
-  xTaskCreatePinnedToCore(upload_task,"Task3", 10000, NULL, 5, &Task1, 0);
+  xTaskCreatePinnedToCore(measure_task,"Task2", 15000, NULL, 5, &Task2, 1);
+  xTaskCreatePinnedToCore(display_task,"Task1", 5000, NULL, 5, &Task1, 0);
+  xTaskCreatePinnedToCore(upload_task,"Task3", 5000, NULL, 5, &Task3, 0);
   //xTaskCreatePinnedToCore(power_task,"Task3", 10000, NULL, 3, &Task3, 2);
   delay(500);
 
@@ -116,9 +116,12 @@ void measure_task (void *pvParameters)
       //vTaskDelay(300);
       //Serial.println("Measure Task is running");
       measure_app.dht22Data.delay();
+      vTaskDelay(300);
+      measure_app.dht22Data.getstatus();
+      
       measure_app.pmsData.readData();
 
-      measure_app.dht22Data.getstatus();
+
       // Serial.print("Humidity: ");
       // Serial.println(measure_app.dht22Data.Humidity);
       // Serial.print("Temperature: ");
