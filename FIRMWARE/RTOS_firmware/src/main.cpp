@@ -15,8 +15,8 @@ void display_task(void *pvParameters);
 void measure_task(void *pvParameters);
 void upload_task(void *pvParameters);
 
-const char* ssid = "Song Quynh";
-const char* password = "songquynh25042112";
+const char* ssid = "Nha 38C";
+const char* password = "123456789";
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
