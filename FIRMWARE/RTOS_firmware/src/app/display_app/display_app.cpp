@@ -56,13 +56,15 @@ void drawFirstScreen(){
     MEASURE_APP *pw = &measure_app;
     String PM_10 = "PM10:";
     String PM_2_5 = "PM2.5:";
+    String AQI = "AQI:";
     PM_10 += pw->pmsData.PMS_10;
     PM_2_5 += pw->pmsData.PMS_2_5;
+    AQI += pw->pmsAQIcal.AQI_h;
     display.setFont(ArialMT_Plain_16);
 
     // The coordinates define the left starting point of the text
     display.setTextAlignment(TEXT_ALIGN_LEFT);
-    display.drawString(0, 20, "AQI:");
+    display.drawString(0, 20, AQI);
     display.drawString(0, 40, PM_2_5);
     display.drawString(55, 20, PM_10);
 }

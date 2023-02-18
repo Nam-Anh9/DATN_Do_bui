@@ -10,13 +10,32 @@ TaskHandle_t Task3;
 
 String UrlThingspeak = "https://api.thingspeak.com/update?api_key=PD6XF5Q7ZZ75D2OA";
 String httpGETRequest(const char* Url);
+
 SemaphoreHandle_t xSerialSemaphore;
+
+static TimerHandle_t reload_timer = NULL;
+bool update_valid = false;
+
+void TimerCallBack_handle(TimerHandle_t xTimer);
 void display_task(void *pvParameters);
 void measure_task(void *pvParameters);
 void upload_task(void *pvParameters);
 
-const char* ssid = "iPhone";
-const char* password = "abc123456789";
+// const char* ntpServer = "pool.ntp.org";
+// const long  gmtOffset_sec = 0;
+// const int   daylightOffset_sec = 3600;
+// void printLocalTime(){
+//   struct tm timeinfo;
+//   if(!getLocalTime(&timeinfo)){
+//     Serial.println("Failed to obtain time");
+//     return;
+//   }
+//   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+// }
+
+
+const char* ssid = "Song Quynh";
+const char* password = "songquynh25042112";
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -61,7 +80,12 @@ void setup() {
   xTaskCreatePinnedToCore(measure_task,"Task2", 15000, NULL, 5, &Task2, 1);
   xTaskCreatePinnedToCore(display_task,"Task1", 5000, NULL, 5, &Task1, 0);
   xTaskCreatePinnedToCore(upload_task,"Task3", 5000, NULL, 5, &Task3, 0);
+  reload_timer = xTimerCreate("Reload Timeer", 60000/ portTICK_PERIOD_MS, pdTRUE, (void*)1, TimerCallBack_handle);
+
   //xTaskCreatePinnedToCore(power_task,"Task3", 10000, NULL, 3, &Task3, 2);
+  // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  // printLocalTime();
+  xTimerStart(reload_timer, portMAX_DELAY);
   delay(500);
 
 }
@@ -115,23 +139,58 @@ void measure_task (void *pvParameters)
       // PMS7003 Task Excute
       //vTaskDelay(300);
       //Serial.println("Measure Task is running");
+      TIME_DATA* p_time = &measure_app.timeData;
+      PMS_AQI_CAL* p_aqi  = &measure_app.pmsAQIcal;
       measure_app.dht22Data.delay();
       vTaskDelay(300);
       measure_app.dht22Data.getstatus();
       
       measure_app.pmsData.readData();
 
+      //Save PMS data 1 time per min
+      if(p_time->one_min_expried == true)
+      {
+        if(p_time->min_counter != 59)
+        {
+          p_aqi->PM10_1h[p_time->min_counter] = measure_app.pmsData.PMS_10;
+          p_aqi->PM2_5_1h[p_time->min_counter] = measure_app.pmsData.PMS_2_5;
 
-      // Serial.print("Humidity: ");
-      // Serial.println(measure_app.dht22Data.Humidity);
-      // Serial.print("Temperature: ");
-      // Serial.println(measure_app.dht22Data.Temperature);
+          p_time->min_counter++;
+          p_time->one_min_expried = false;
+        }
+        else
+        {
+          p_aqi->PM10_1h[p_time->min_counter] = measure_app.pmsData.PMS_10;
+          p_aqi->PM2_5_1h[p_time->min_counter] = measure_app.pmsData.PMS_2_5;
 
-      // Serial.print("PM 2.5 (ug/m3): ");
-      // Serial.println(measure_app.pmsData.PMS_2_5);
+          p_time->min_counter = 0;
+          p_time->one_min_expried = false;
+          p_time->one_hour_expried = true;
+        }
+      }
 
-      // Serial.print("PM 10.0 (ug/m3): ");
-      // Serial.println(measure_app.pmsData.PMS_1_0);
+      if(p_time->one_hour_expried == true)
+      {
+        if(p_time->hour_counter != 11)
+        {
+          p_aqi->PM10_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM10_1h);
+          p_aqi->PM2_5_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM2_5_1h);
+
+          p_time->hour_counter++;
+          p_time->one_hour_expried = false;
+        }
+        else
+        {
+          p_aqi->PM10_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM10_1h);
+          p_aqi->PM2_5_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM2_5_1h);
+
+          p_time->hour_counter = 0;
+          p_time->one_hour_expried = false;
+        }
+        p_aqi->PM2_5_Nowcast = p_aqi->getNowcast(p_aqi->PM2_5_c);
+        p_aqi->PM10_Nowcast = p_aqi->getNowcast(p_aqi->PM10_c);
+        p_aqi->getAQIh();
+      }
       xSemaphoreGive(xSerialSemaphore);
     }
     vTaskDelay(100);
@@ -148,14 +207,20 @@ void upload_task(void *pvParameters)
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 10 ) == pdTRUE )
     {
       //Serial.println("Measure Task is running");
-      int pm_10 = pw->pmsData.PMS_10;
-      int pm_2_5 = pw->pmsData.PMS_2_5;
-      float humi = pw->dht22Data.Humidity;
-      float temp = pw->dht22Data.Temperature;
-      char para[60];
-      sprintf(para,"&field1=%d&field2=%d&field4=%f&field5=%f",pm_2_5,pm_10,temp,humi);
-      String Url = UrlThingspeak + String(para);
-      httpGETRequest(Url.c_str());
+      if(update_valid)
+      {
+        int pm_10 = pw->pmsData.PMS_10;
+        int pm_2_5 = pw->pmsData.PMS_2_5;
+        float humi = pw->dht22Data.Humidity;
+        float temp = pw->dht22Data.Temperature;
+        int aqi_h = pw->pmsAQIcal.AQI_h;
+        char para[60];
+        sprintf(para,"&field1=%d&field2=%d&field3=%d&field4=%f&field5=%f",pm_2_5,pm_10,aqi_h,temp,humi);
+        String Url = UrlThingspeak + String(para);
+        httpGETRequest(Url.c_str());
+        update_valid = false;
+      }
+
       xSemaphoreGive(xSerialSemaphore);
     }
     vTaskDelay(100);
@@ -196,6 +261,16 @@ String httpGETRequest(const char* Url)
   }
   http.end();
   return responseBody;
+}
+
+void TimerCallBack_handle(TimerHandle_t xTimer)
+{
+  if((uint32_t)pvTimerGetTimerID(xTimer) == 1)
+  {
+    Serial.println("Auto reload timer expried");
+    measure_app.timeData.one_min_expried = true;
+    update_valid = true;
+  }
 }
 void loop() {
   // put your main code here, to run repeatedly:

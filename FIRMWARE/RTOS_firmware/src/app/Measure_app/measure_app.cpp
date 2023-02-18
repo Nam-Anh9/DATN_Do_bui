@@ -34,98 +34,116 @@ static void PMS_ReadData()
     }
 }
 
-// bool PMS_IsNewHour() 
-// {
-//   MEASURE_APP* pw = &measure_app;
-//   bool isNewHour = false; 
-//   if(pw->pmsData.pms_aqi_cal.preHour != pw->pmsData.pms_aqi_cal.recentHour)
-//   {
-//     isNewHour = true;
-//     return isNewHour;
-//   }
-//   else
-//   {
-//     isNewHour = false;
-//     return isNewHour;
-//   }
-// }
+static uint16_t PMS_Get1Hour_Data(uint16_t* PM_Data)
+{
+  float c = 0;
+  for(int i = 0; i < 60; i++)
+  {
+    c += (float)*PM_Data;
+    PM_Data++;
+  }
 
-// static void PMS_1H_averageValue()
-// {
-//   PMS_DATA* pw = &measure_app.pmsData;
-//   uint8_t index = pw->.pms_aqi_cal.recentHour;
-//   float PM2_5_AVE_Buffer = 0;
-//   float PM10_AVE_Buffer = 0;
-//   pw->pms_aqi_cal.PM2_5_SUM_1H += pw->PMS_2_5;
-//   pw->pms_aqi_cal.PM10_SUM_1H += pw->PMS_10;
-//   pw->pms_aqi_cal.sum_count ++;
-//   if(PMS_IsNewHour())
-//   {
-//     PM2_5_AVE_Buffer = pw->pms_aqi_cal.PM2_5_SUM_1H/pw->pms_aqi_cal.sum_count;
-//     PM10_AVE_Buffer = pw->pms_aqi_cal.PM10_SUM_1H/pw->pms_aqi_cal.sum_count;
-//     if(index != 0)
-//     {
-//       pw->pms_aqi_cal.PM2_5_c[index - 1] = PM2_5_AVE_Buffer;
-//       pw->pms_aqi_cal.PM10_c[index - 1] = PM10_AVE_Buffer;
-//     }
-//     else
-//     {
-//       pw->pms_aqi_cal.PM2_5_c[23] = PM2_5_AVE_Buffer;
-//       pw->pms_aqi_cal.PM10_c[23] = PM10_AVE_Buffer;
-//     }
+  c = c/60;
 
-//     pw->pms_aqi_cal.PM2_5_SUM_1H = 0;
-//     pw->pms_aqi_cal.PM10_SUM_1H = 0;
-//     pw->pms_aqi_cal.sum_count = 0;
-//   }
-// }
-// static void PMS_Nowcast_PM2_5_W() 
-// { 
-//   PMS_AQI_CAL* pw = &measure_app.pmsData.pms_aqi_cal;
-//   float C_min = pw->PM2_5_c[0];
-//   float C_max = pw->PM2_5_c[0];
-//   int index = pw->recentHour;
-//   float C_array[12] = {0};
+  return round(c);
+}
+
+static float PMS_GetNowcast(uint16_t* PM_C)
+{
+  float Nowcast = 0;
+  float w = 0, w_temp = 0;
+  if(*(PM_C+4) == 0)
+  {
+    Serial.println("No Nowcast Value");
+    Nowcast = 0;
+  }
+  else
+  {
+    float c_min = (float)*PM_C;
+    float c_max = (float)*PM_C;
+
+    for(int i = 0; i < 12; i++)
+    {
+      if(c_max < (float)*PM_C)  c_max = (float)*PM_C;
+      if(c_min > (float)*PM_C)  c_min = (float)*PM_C;
+      *PM_C++;
+    }
+
+    //Return Pointer to start posistion
+    PM_C = PM_C - 12;
+    //Calculate w
+    w_temp = c_max/c_min;
+    if(w_temp <= 0.5)
+    {
+      w = 0.5;
+      for(float i = 0; i < 12; i++)
+      {
+        Nowcast += pow(w,i)*((float)*PM_C); // 0.5c0 + 0.5^2c1 + ....
+        *PM_C++;
+      }
+    }
+    else
+    {
+      w = w_temp;
+      float divide_number = 0;
+      for(float i = 0; i < 12; i++)
+      {
+        divide_number += pow(w,i);      //w + w^1 + w^2 + ...
+      }
+      for(float i = 0; i < 12; i++)
+      {
+        Nowcast += (pow(w,i)*((float)*PM_C))/divide_number; // (w.c0 + w^1.c1 + ....) / (w + w^1 + w^2 + ...)
+        *PM_C++;
+      }
+    }
+  }
   
-//   if(index >=11)
-//   {
-//     for(int i = index - 11; i <= index; i ++)
-//     {
-//       C_array[i] = pw->PM2_5_c[i];
-//     }
-//   }
-//   else
-//   {
-//     for(int i = 0; i <= index; i++)
-//     {
-//       C_array[i] = pw->PM2_5_c[i];
-//     }
-//     for(int i = index+1; i <=11; i++)
-//     {
-//       C_array[i] = pw->PM2_5_c[23 - (11 - i)];
-//     }
-//   }
+  return Nowcast;
+}
 
-//   for(int i = 0; i <= 11; i ++)
-//   {
-//     if(C_max < C_array[i])
-//     {
-//       C_max = C_array[i];
-//     }
-//     if(C_min > C_array[i])
-//     {
-//       C_min = C_array[i]; 
-//     }
-//   }
+void PMS_GetAQIh()
+{ 
+  PMS_AQI_CAL* p_aqi = &measure_app.pmsAQIcal;
+  int I[8] = {0,50,100,150,200,300,400,500};
+  int BP_PM10[8] = {0,50,150,250,350,420,500,600};
+  int BP_PM2_5[8] = {0,25,50,80,150,250,350,500};
+  uint8_t AQI_PM_10_counter = 0;
+  uint8_t AQI_PM_2_5_counter = 0;
 
-//   float temp_w = C_min/C_max;
-//   if(temp_w > 0.5){
-//     pw->Nowcast_w = temp_w;
-//   }
-//   else{
-//     pw->Nowcast_w = 0.5;
-//   }
-// }
+  float AQI_PM10 = 0;
+  float AQI_PM2_5 = 0;
+  if(p_aqi->PM2_5_Nowcast == 0 || p_aqi->PM10_Nowcast == 0)
+  { 
+    p_aqi->AQI_h = 1;
+    return;
+  }
+  else
+  {
+    while(p_aqi->PM2_5_c[0] > BP_PM2_5[AQI_PM_2_5_counter])
+    {
+      AQI_PM_2_5_counter++;
+    }
+    while(p_aqi->PM10_c[0] < BP_PM10[AQI_PM_10_counter])
+    {
+      AQI_PM_10_counter++;
+    }
+
+    AQI_PM10 = (((float)(I[AQI_PM_10_counter] - I[AQI_PM_10_counter-1]))
+                /((float)(BP_PM10[AQI_PM_10_counter] - BP_PM10[AQI_PM_10_counter-1])))
+                *((float)(p_aqi->PM10_Nowcast - BP_PM10[AQI_PM_10_counter])) + (float)I[AQI_PM_10_counter];
+    AQI_PM2_5 = (((float)(I[AQI_PM_2_5_counter] - I[AQI_PM_2_5_counter-1]))
+                /((float)(BP_PM10[AQI_PM_2_5_counter] - BP_PM2_5[AQI_PM_2_5_counter-1])))
+                *((float)(p_aqi->PM2_5_Nowcast - BP_PM2_5[AQI_PM_2_5_counter])) + (float)I[AQI_PM_2_5_counter];
+    if(AQI_PM10 > AQI_PM2_5)
+    {
+      p_aqi->AQI_h = (int)AQI_PM10;
+    }
+    else
+    {
+      p_aqi->AQI_h = (int)AQI_PM2_5;
+    }
+  }
+}
 static void DHT_Init() {
   dht.setup(DHT_PIN);
 }
@@ -138,6 +156,7 @@ static void DHT_GetStatus() {
   pw->dht22Data.Humidity = dht.getHumidity();
   pw->dht22Data.Temperature = dht.getTemperature();
 }
+
 MEASURE_APP measure_app = {
     .pmsData = {
         .init = PMS_Init,
@@ -147,6 +166,11 @@ MEASURE_APP measure_app = {
       .init = DHT_Init,
       .delay = DHT_Delay,
       .getstatus = DHT_GetStatus
+    },
+    .pmsAQIcal = {
+      .getAQIh = PMS_GetAQIh,
+      .getPMSdata1hour = PMS_Get1Hour_Data,
+      .getNowcast = PMS_GetNowcast
     }
 };
 
