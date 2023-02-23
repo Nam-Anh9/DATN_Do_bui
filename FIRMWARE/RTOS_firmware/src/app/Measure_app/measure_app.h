@@ -40,6 +40,8 @@ typedef struct PMS_DATA_t{
 typedef struct DHT22_DATA_t{
     float Humidity;
     float Temperature;
+    float Humidity_update;
+    float Temperature_update;
     void (*init)();
     void (*delay)();
     void (*getstatus)();

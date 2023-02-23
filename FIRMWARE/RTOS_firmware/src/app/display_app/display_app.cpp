@@ -73,8 +73,8 @@ void drawSecondScreen(){
     MEASURE_APP* pw = &measure_app;
     String Temp = "Temp: ";
     String Humi = "Humi: ";
-    Temp += pw->dht22Data.Temperature;
-    Humi += pw->dht22Data.Humidity;
+    Temp += pw->dht22Data.Temperature_update;
+    Humi += pw->dht22Data.Humidity_update;
     Temp += " oC";
     Humi += " %";
     display.setFont(ArialMT_Plain_16);

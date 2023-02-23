@@ -211,8 +211,8 @@ void upload_task(void *pvParameters)
       {
         int pm_10 = pw->pmsData.PMS_10;
         int pm_2_5 = pw->pmsData.PMS_2_5;
-        float humi = pw->dht22Data.Humidity;
-        float temp = pw->dht22Data.Temperature;
+        float humi = pw->dht22Data.Humidity_update;
+        float temp = pw->dht22Data.Temperature_update;
         int aqi_h = pw->pmsAQIcal.AQI_h;
         char para[60];
         sprintf(para,"&field1=%d&field2=%d&field3=%d&field4=%f&field5=%f",pm_2_5,pm_10,aqi_h,temp,humi);

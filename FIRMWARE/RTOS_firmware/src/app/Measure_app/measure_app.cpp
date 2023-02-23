@@ -16,8 +16,8 @@ static void PMS_ReadData()
     {
       // if(data.PM_AE_UG_10_0 <= 35)
       // {
-        pw->pmsData.PMS_10 = data.PM_AE_UG_10_0;
-        pw->pmsData.PMS_2_5 = data.PM_AE_UG_2_5;
+        pw->pmsData.PMS_10 =  0.849901*(float)data.PM_AE_UG_10_0 - 0.04372*pw->dht22Data.Temperature - 0.12205*pw->dht22Data.Humidity + 12.51084;
+        pw->pmsData.PMS_2_5 = 0.9087*(float)data.PM_AE_UG_2_5 - 0.04624*pw->dht22Data.Temperature - 0.01895*pw->dht22Data.Humidity + 4.29551;
         pw->pmsData.PMS_1_0 = data.PM_AE_UG_1_0;
       //}
       // else
@@ -155,6 +155,8 @@ static void DHT_GetStatus() {
   MEASURE_APP* pw = &measure_app;
   pw->dht22Data.Humidity = dht.getHumidity();
   pw->dht22Data.Temperature = dht.getTemperature();
+  pw->dht22Data.Humidity_update = -0.7563*pw->dht22Data.Humidity + 105.3394;
+  pw->dht22Data.Temperature_update = 0.269821*pw->dht22Data.Temperature + 18.14026;
 }
 
 MEASURE_APP measure_app = {
