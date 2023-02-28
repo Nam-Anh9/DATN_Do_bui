@@ -52,52 +52,47 @@ static float PMS_GetNowcast(uint16_t* PM_C)
 {
   float Nowcast = 0;
   float w = 0, w_temp = 0;
-  if(*(PM_C+4) == 0)
+  float c_min = (float)*PM_C;
+  float c_max = (float)*PM_C;
+
+  for(int i = 0; i < 12; i++)
   {
-    Serial.println("No Nowcast Value");
-    Nowcast = 0;
+    if(c_max < (float)*PM_C)  c_max = (float)*PM_C;
+    if(c_min > (float)*PM_C)  c_min = (float)*PM_C;
+    *PM_C++;
+  }
+
+  // Serial.print("c_min = ");
+  // Serial.println(c_min);
+  // Serial.print("c_max = ");
+  // Serial.println(c_max);
+  //Return Pointer to start posistion
+  PM_C = PM_C - 12;
+  //Calculate w
+  w_temp = c_max/c_min;
+  if(w_temp <= 0.5)
+  {
+    w = 0.5;
+    for(float i = 0; i < 12; i++)
+    {
+      Nowcast += pow(w,i)*((float)*PM_C); // 0.5c0 + 0.5^2c1 + ....
+      *PM_C++;
+    }
   }
   else
   {
-    float c_min = (float)*PM_C;
-    float c_max = (float)*PM_C;
-
-    for(int i = 0; i < 12; i++)
+    w = w_temp;
+    float divide_number = 0;
+    for(float i = 0; i < 12; i++)
     {
-      if(c_max < (float)*PM_C)  c_max = (float)*PM_C;
-      if(c_min > (float)*PM_C)  c_min = (float)*PM_C;
+      divide_number += pow(w,i);      //w + w^1 + w^2 + ...
+    }
+    for(float i = 0; i < 12; i++)
+    {
+      Nowcast += (pow(w,i)*((float)*PM_C))/divide_number; // (w.c0 + w^1.c1 + ....) / (w + w^1 + w^2 + ...)
       *PM_C++;
     }
-
-    //Return Pointer to start posistion
-    PM_C = PM_C - 12;
-    //Calculate w
-    w_temp = c_max/c_min;
-    if(w_temp <= 0.5)
-    {
-      w = 0.5;
-      for(float i = 0; i < 12; i++)
-      {
-        Nowcast += pow(w,i)*((float)*PM_C); // 0.5c0 + 0.5^2c1 + ....
-        *PM_C++;
-      }
-    }
-    else
-    {
-      w = w_temp;
-      float divide_number = 0;
-      for(float i = 0; i < 12; i++)
-      {
-        divide_number += pow(w,i);      //w + w^1 + w^2 + ...
-      }
-      for(float i = 0; i < 12; i++)
-      {
-        Nowcast += (pow(w,i)*((float)*PM_C))/divide_number; // (w.c0 + w^1.c1 + ....) / (w + w^1 + w^2 + ...)
-        *PM_C++;
-      }
-    }
   }
-  
   return Nowcast;
 }
 
@@ -118,22 +113,75 @@ void PMS_GetAQIh()
     return;
   }
   else
-  {
-    while(p_aqi->PM2_5_c[0] > BP_PM2_5[AQI_PM_2_5_counter])
+  { 
+    // PM2_5_AQI_h
+    if(p_aqi->PM2_5_Nowcast <= 25 && p_aqi->PM2_5_Nowcast > 0)
     {
-      AQI_PM_2_5_counter++;
+      AQI_PM2_5 = (50.0/25.0)*(p_aqi->PM2_5_Nowcast - 0) + 0;               //I1
     }
-    while(p_aqi->PM10_c[0] < BP_PM10[AQI_PM_10_counter])
+    else if(p_aqi->PM2_5_Nowcast <= 50 && p_aqi->PM2_5_Nowcast > 25)
     {
-      AQI_PM_10_counter++;
+      AQI_PM2_5 = ((100.0-50.0)/(50.0-25.0))*(p_aqi->PM2_5_Nowcast - 25.0) + 50.0;    //I2
+    }
+    else if(p_aqi->PM2_5_Nowcast <= 80 && p_aqi->PM2_5_Nowcast > 50)
+    {
+      AQI_PM2_5 = ((150.0-100.0)/(80.0-50.0))*(p_aqi->PM2_5_Nowcast - 50.0) + 100.0;  //I3
+    }
+    else if(p_aqi->PM2_5_Nowcast <= 150 && p_aqi->PM2_5_Nowcast > 80)
+    {
+      AQI_PM2_5 = ((200.0-150.0)/(150.0-80.0))*(p_aqi->PM2_5_Nowcast - 80.0) + 150.0;  //I4
+    }
+    else if(p_aqi->PM2_5_Nowcast <= 250 && p_aqi->PM2_5_Nowcast > 150)
+    {
+      AQI_PM2_5 = ((300.0-200.0)/(250.0-150.0))*(p_aqi->PM2_5_Nowcast - 150.0) + 200.0;  //I5
+    }
+    else if(p_aqi->PM2_5_Nowcast <= 350 && p_aqi->PM2_5_Nowcast > 250)
+    {
+      AQI_PM2_5 = ((400.0-300.0)/(350.0-250.0))*(p_aqi->PM2_5_Nowcast - 250.0) + 300.0;  //I6
+    }
+    else if(p_aqi->PM2_5_Nowcast <= 500 && p_aqi->PM2_5_Nowcast > 350)
+    {
+      AQI_PM2_5 = ((500.0-400.0)/(500.0-350.0))*(p_aqi->PM2_5_Nowcast - 350.0) + 400.0;  //I7
+    }
+    else
+    {
+      AQI_PM2_5 = ((600.0-500.0)/(600-500))*(p_aqi->PM2_5_Nowcast - 500.0) + 400.0;  //I8
     }
 
-    AQI_PM10 = (((float)(I[AQI_PM_10_counter] - I[AQI_PM_10_counter-1]))
-                /((float)(BP_PM10[AQI_PM_10_counter] - BP_PM10[AQI_PM_10_counter-1])))
-                *((float)(p_aqi->PM10_Nowcast - BP_PM10[AQI_PM_10_counter])) + (float)I[AQI_PM_10_counter];
-    AQI_PM2_5 = (((float)(I[AQI_PM_2_5_counter] - I[AQI_PM_2_5_counter-1]))
-                /((float)(BP_PM10[AQI_PM_2_5_counter] - BP_PM2_5[AQI_PM_2_5_counter-1])))
-                *((float)(p_aqi->PM2_5_Nowcast - BP_PM2_5[AQI_PM_2_5_counter])) + (float)I[AQI_PM_2_5_counter];
+    // Tinh PM_10_AQI_h
+
+    if(p_aqi->PM10_Nowcast <= 50 && p_aqi->PM10_Nowcast > 0)
+    {
+      AQI_PM10 = (50.0/50.0)*(p_aqi->PM10_Nowcast - 0) + 0;               //I1
+    }
+    else if(p_aqi->PM10_Nowcast <= 150 && p_aqi->PM10_Nowcast > 50)
+    {
+      AQI_PM10 = ((100.0-50.0)/(150.0-50.0))*(p_aqi->PM10_Nowcast - 25.0) + 50.0;    //I2
+    }
+    else if(p_aqi->PM10_Nowcast <= 250 && p_aqi->PM10_Nowcast > 150)
+    {
+      AQI_PM10 = ((150.0-100.0)/(250.0-150.0))*(p_aqi->PM10_Nowcast - 150.0) + 100.0;  //I3
+    }
+    else if(p_aqi->PM10_Nowcast <= 350 && p_aqi->PM10_Nowcast > 250)
+    {
+      AQI_PM10 = ((200.0-150.0)/(350.0-250.0))*(p_aqi->PM10_Nowcast - 250.0) + 150.0;  //I4
+    }
+    else if(p_aqi->PM10_Nowcast <= 420 && p_aqi->PM10_Nowcast > 350)
+    {
+      AQI_PM10 = ((300.0-200.0)/(420.0-350.0))*(p_aqi->PM10_Nowcast - 350.0) + 200.0;  //I5
+    }
+    else if(p_aqi->PM10_Nowcast <= 500 && p_aqi->PM10_Nowcast > 420)
+    {
+      AQI_PM10 = ((400.0-300.0)/(500.0-420.0))*(p_aqi->PM10_Nowcast - 420.0) + 300.0;  //I6
+    }
+    else if(p_aqi->PM10_Nowcast <= 600 && p_aqi->PM10_Nowcast > 500)
+    {
+      AQI_PM10 = ((500.0-400.0)/(600.0-500.0))*(p_aqi->PM10_Nowcast - 500.0) + 400.0;  //I7
+    }
+    else
+    {
+      AQI_PM10 = ((700.0-600.0)/(700-600))*(p_aqi->PM10_Nowcast - 600.0) + 400.0;  //I8
+    }
     if(AQI_PM10 > AQI_PM2_5)
     {
       p_aqi->AQI_h = (int)AQI_PM10;

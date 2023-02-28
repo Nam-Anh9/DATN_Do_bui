@@ -2,8 +2,9 @@
 #include <WiFi.h>
 #include "app/display_app/display_app.h"
 #include "app/measure_app/measure_app.h"
+#include "app/flash_app/flash_app.h"
 #include "HTTPClient.h"
-
+#define   DEBUGMODE   0
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 TaskHandle_t Task3;
@@ -21,25 +22,13 @@ void display_task(void *pvParameters);
 void measure_task(void *pvParameters);
 void upload_task(void *pvParameters);
 
-// const char* ntpServer = "pool.ntp.org";
-// const long  gmtOffset_sec = 0;
-// const int   daylightOffset_sec = 3600;
-// void printLocalTime(){
-//   struct tm timeinfo;
-//   if(!getLocalTime(&timeinfo)){
-//     Serial.println("Failed to obtain time");
-//     return;
-//   }
-//   Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-// }
-
-
 const char* ssid = "Song Quynh";
 const char* password = "songquynh25042112";
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   PMS_SERIAL.begin(9600);
+  EEPROM.begin(FLASH_MAXBYTE_USED);
   // WiFi.mode(WIFI_AP_STA);
   // /* start SmartConfig */
   // WiFi.beginSmartConfig();
@@ -69,6 +58,9 @@ void setup() {
   // Serial.println("IP address: ");
   // Serial.println(WiFi.localIP());
   display_app.wifi_status = 1;
+
+  AQI_store_init();
+
   if(xSerialSemaphore == NULL)
   {
     xSerialSemaphore = xSemaphoreCreateCounting(3,3);
@@ -77,7 +69,7 @@ void setup() {
       xSemaphoreGive((xSerialSemaphore));
     }
   }
-  xTaskCreatePinnedToCore(measure_task,"Task2", 15000, NULL, 5, &Task2, 1);
+  xTaskCreatePinnedToCore(measure_task,"Task2", 25000, NULL, 4, &Task2, 1);
   xTaskCreatePinnedToCore(display_task,"Task1", 5000, NULL, 5, &Task1, 0);
   xTaskCreatePinnedToCore(upload_task,"Task3", 5000, NULL, 5, &Task3, 0);
   reload_timer = xTimerCreate("Reload Timeer", 60000/ portTICK_PERIOD_MS, pdTRUE, (void*)1, TimerCallBack_handle);
@@ -86,6 +78,18 @@ void setup() {
   // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   // printLocalTime();
   xTimerStart(reload_timer, portMAX_DELAY);
+#if DEBUGMODE
+  for(int i = 0; i < 12; i++)
+  {
+    Serial.print("P2_5:");
+    Serial.println(measure_app.pmsAQIcal.PM2_5_c[i]);
+  }
+  for(int i = 0; i < 12; i++)
+  {
+    Serial.print("P10:");
+    Serial.println(measure_app.pmsAQIcal.PM10_c[i]);
+  }
+#endif
   delay(500);
 
 }
@@ -131,6 +135,21 @@ void measure_task (void *pvParameters)
   // Serial.println(xPortGetCoreID());
   measure_app.pmsData.init();
   measure_app.dht22Data.init();
+  measure_app.pmsAQIcal.PM2_5_Nowcast = measure_app.pmsAQIcal.getNowcast(measure_app.pmsAQIcal.PM2_5_c);
+#if DEBUGMODE
+  Serial.print("Nowcast_PM2.5 = ");
+  Serial.println(measure_app.pmsAQIcal.PM2_5_Nowcast);
+#endif
+  measure_app.pmsAQIcal.PM10_Nowcast = measure_app.pmsAQIcal.getNowcast(measure_app.pmsAQIcal.PM10_c);
+#if DEBUGMODE
+  Serial.print("Nowcast_PM10 = ");
+  Serial.println(measure_app.pmsAQIcal.PM10_Nowcast);
+#endif
+  measure_app.pmsAQIcal.getAQIh();
+#if DEBUGMODE
+  Serial.print("AQIh = ");
+  Serial.println(measure_app.pmsAQIcal.AQI_h);
+#endif
   for(;;)
   { 
     // If the semaphore is not available, wait 5 ticks of the Scheduler to see if it becomes free.
@@ -144,9 +163,8 @@ void measure_task (void *pvParameters)
       measure_app.dht22Data.delay();
       vTaskDelay(300);
       measure_app.dht22Data.getstatus();
-      
       measure_app.pmsData.readData();
-
+      vTaskDelay(300);
       //Save PMS data 1 time per min
       if(p_time->one_min_expried == true)
       {
@@ -172,21 +190,33 @@ void measure_task (void *pvParameters)
       if(p_time->one_hour_expried == true)
       {
         if(p_time->hour_counter != 11)
-        {
+        { 
+          //Tinh AQI trun binh h
           p_aqi->PM10_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM10_1h);
           p_aqi->PM2_5_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM2_5_1h);
+          //Ghi vao flash
+          Write1UshortFlash(p_time->hour_counter*2, p_aqi->PM2_5_c[p_time->hour_counter]);
+          Write1UshortFlash(p_time->hour_counter*2 + PM10_C_0_ADDRESS, p_aqi->PM10_c[p_time->hour_counter]);
 
           p_time->hour_counter++;
           p_time->one_hour_expried = false;
         }
         else
-        {
+        { 
+          //Tinh AQI trung binh h
           p_aqi->PM10_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM10_1h);
           p_aqi->PM2_5_c[p_time->hour_counter] = p_aqi->getPMSdata1hour(p_aqi->PM2_5_1h);
+
+          //Ghi vao flash
+          Write1UshortFlash(p_time->hour_counter*2, p_aqi->PM2_5_c[p_time->hour_counter]);
+          Write1UshortFlash(p_time->hour_counter*2 + PM10_C_0_ADDRESS, p_aqi->PM10_c[p_time->hour_counter]);
 
           p_time->hour_counter = 0;
           p_time->one_hour_expried = false;
         }
+
+        ReadUshortsFlash(PM2_5_C_0_ADDRESS, measure_app.pmsAQIcal.PM2_5_c, 12);
+        ReadUshortsFlash(PM10_C_0_ADDRESS, measure_app.pmsAQIcal.PM10_c, 12);
         p_aqi->PM2_5_Nowcast = p_aqi->getNowcast(p_aqi->PM2_5_c);
         p_aqi->PM10_Nowcast = p_aqi->getNowcast(p_aqi->PM10_c);
         p_aqi->getAQIh();
@@ -227,19 +257,6 @@ void upload_task(void *pvParameters)
 
   }
 }
-// void power_task (void *pvParameters)
-// {
-//   (void) pvParameters;
-
-//   for(;;)
-//   {
-//     if(xSemaphoreTake(xSerialSemaphore, (TickType_t) 5) == pdTRUE)
-//     { 
-//       vTaskDelay(10);
-//       xSemaphoreGive (xSerialSemaphore);
-//     }
-//   }
-// }
 
 String httpGETRequest(const char* Url)
 {
