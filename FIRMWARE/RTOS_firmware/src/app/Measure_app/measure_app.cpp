@@ -44,7 +44,7 @@ static uint16_t PMS_Get1Hour_Data(uint16_t* PM_Data)
   }
 
   c = c/60;
-
+  
   return round(c);
 }
 
@@ -201,11 +201,15 @@ static void DHT_Delay() {
 
 static void DHT_GetStatus() {
   MEASURE_APP* pw = &measure_app;
-  pw->dht22Data.Humidity = dht.getHumidity();
-  pw->dht22Data.Temperature = dht.getTemperature();
+  if(dht.getTemperature() < 100)
+  {
+    pw->dht22Data.Humidity = dht.getHumidity();
+    pw->dht22Data.Temperature = dht.getTemperature();
+  }
   pw->dht22Data.Humidity_update = -0.7563*pw->dht22Data.Humidity + 105.3394;
   pw->dht22Data.Temperature_update = 0.269821*pw->dht22Data.Temperature + 18.14026;
 }
+
 
 MEASURE_APP measure_app = {
     .pmsData = {

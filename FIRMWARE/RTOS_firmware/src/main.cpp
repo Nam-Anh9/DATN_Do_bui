@@ -4,7 +4,9 @@
 #include "app/measure_app/measure_app.h"
 #include "app/flash_app/flash_app.h"
 #include "HTTPClient.h"
+
 #define   DEBUGMODE   0
+
 TaskHandle_t Task1;
 TaskHandle_t Task2;
 TaskHandle_t Task3;
@@ -29,6 +31,8 @@ void setup() {
   Serial.begin(9600);
   PMS_SERIAL.begin(9600);
   EEPROM.begin(FLASH_MAXBYTE_USED);
+  pinMode(POWER_PIN, INPUT);
+  pinMode(BATTERY_PIN, INPUT);
   // WiFi.mode(WIFI_AP_STA);
   // /* start SmartConfig */
   // WiFi.beginSmartConfig();
@@ -43,22 +47,30 @@ void setup() {
   // Serial.println("SmartConfig done.");
  
   /* Wait for WiFi to connect to AP */
+  display_app.reg_b = READ_PERI_REG(SENS_SAR_READ_CTRL2_REG);   //Save ADC2 reg address
   WiFi.begin(ssid, password);
   Serial.println("Waiting for WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-    display_app.wifi_status = 0;
+  int lastime = millis();
+  while (millis() - lastime <= 5000) {
+    if(WiFi.status() != WL_CONNECTED)
+    {
+      delay(500);
+      Serial.print(".");
+      display_app.wifi_status = 0;
+    }
+    else
+    {
+      display_app.wifi_status = 1;
+      Serial.println("WiFi Connected.");
+      Serial.print("IP Address: ");
+      Serial.println(WiFi.localIP());
+      break;
+    }
   }
-  Serial.println("WiFi Connected.");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
   // Serial.println("");
   // Serial.println("WiFi connected.");
   // Serial.println("IP address: ");
   // Serial.println(WiFi.localIP());
-  display_app.wifi_status = 1;
-
   AQI_store_init();
 
   if(xSerialSemaphore == NULL)
@@ -69,7 +81,7 @@ void setup() {
       xSemaphoreGive((xSerialSemaphore));
     }
   }
-  xTaskCreatePinnedToCore(measure_task,"Task2", 25000, NULL, 4, &Task2, 1);
+  xTaskCreatePinnedToCore(measure_task,"Task2", 20000, NULL, 5, &Task2, 1);
   xTaskCreatePinnedToCore(display_task,"Task1", 5000, NULL, 5, &Task1, 0);
   xTaskCreatePinnedToCore(upload_task,"Task3", 5000, NULL, 5, &Task3, 0);
   reload_timer = xTimerCreate("Reload Timeer", 60000/ portTICK_PERIOD_MS, pdTRUE, (void*)1, TimerCallBack_handle);
@@ -111,6 +123,7 @@ void display_task(void *pvParameters)
     if(xSemaphoreTake(xSerialSemaphore, (TickType_t) 10) == pdTRUE)
     {   
         //Serial.println("Display Task is running");
+        getBatteryStatus();
         OLED_clearScreen();
         drawFirstScreen();
         OLED_display();
@@ -238,17 +251,43 @@ void upload_task(void *pvParameters)
     {
       //Serial.println("Measure Task is running");
       if(update_valid)
-      {
-        int pm_10 = pw->pmsData.PMS_10;
-        int pm_2_5 = pw->pmsData.PMS_2_5;
-        float humi = pw->dht22Data.Humidity_update;
-        float temp = pw->dht22Data.Temperature_update;
-        int aqi_h = pw->pmsAQIcal.AQI_h;
-        char para[60];
-        sprintf(para,"&field1=%d&field2=%d&field3=%d&field4=%f&field5=%f",pm_2_5,pm_10,aqi_h,temp,humi);
-        String Url = UrlThingspeak + String(para);
-        httpGETRequest(Url.c_str());
-        update_valid = false;
+      { 
+        if (display_app.wifi_status == 0)
+        {
+          WiFi.begin(ssid, password);
+          Serial.println("Waiting for WiFi");
+          int lastime = millis();
+          while (millis() - lastime <= 5000) {
+            if(WiFi.status() != WL_CONNECTED)
+            {
+              delay(500);
+              Serial.print(".");
+              display_app.wifi_status = 0;
+            }
+            else
+            {
+              display_app.wifi_status = 1;
+              Serial.println("WiFi Connected.");
+              Serial.print("IP Address: ");
+              Serial.println(WiFi.localIP());
+              break;
+            }
+          }
+        }
+        else
+        {
+          int pm_10 = pw->pmsData.PMS_10;
+          int pm_2_5 = pw->pmsData.PMS_2_5;
+          float humi = pw->dht22Data.Humidity_update;
+          float temp = pw->dht22Data.Temperature_update;
+          int aqi_h = pw->pmsAQIcal.AQI_h;
+          char para[60];
+          sprintf(para,"&field1=%d&field2=%d&field3=%d&field4=%f&field5=%f",pm_2_5,pm_10,aqi_h,temp,humi);
+          String Url = UrlThingspeak + String(para);
+          httpGETRequest(Url.c_str());
+          update_valid = false;
+        }
+
       }
 
       xSemaphoreGive(xSerialSemaphore);

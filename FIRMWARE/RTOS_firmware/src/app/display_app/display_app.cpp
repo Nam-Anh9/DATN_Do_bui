@@ -1,5 +1,7 @@
 #include "display_app.h"
 #include <string.h>
+
+
 SH1106Wire display(0x3c, SDA, SCL);
 DISPLAY_APP display_app = {
     .battert_percent = 0
@@ -30,14 +32,16 @@ void OLED_drawBatteryPercent(){
 }
 void OLED_drawBatteryLogo(){
     DISPLAY_APP *pw = &display_app;
-    if(pw->battery_status)
+    switch (pw->battery_status)
     {
-        display.drawXbm(20, 0, Batery_Logo_width,Batery_Logo_height, Batery_Logo_bits);
-    }
-    else
-    {
-        display.setFont(ArialMT_Plain_10);
-        display.drawString(20,0,"charge");
+        case BATTERY_USING:
+            display.drawXbm(20, 0, Batery_Logo_width,Batery_Logo_height, Batery_Logo_bits);
+            break;
+        case BATTERY_CHARGING:
+            display.drawXbm(20, 0, Batery_Logo_width,Batery_Logo_height, Battery_Charging_Logo_bits);
+            break;
+        default:
+            break;
     }
 }
 void OLED_display(){
@@ -48,7 +52,7 @@ void OLED_clearScreen(){
 }
 void drawTaskbar(){
     OLED_drawWifiLogo();
-    OLED_drawBatteryPercent();
+    //OLED_drawBatteryPercent();
     OLED_drawBatteryLogo();
 }
 void drawFirstScreen(){
@@ -68,6 +72,7 @@ void drawFirstScreen(){
     display.drawString(0, 40, PM_2_5);
     display.drawString(55, 20, PM_10);
 }
+
 void drawSecondScreen(){
     drawTaskbar();
     MEASURE_APP* pw = &measure_app;
@@ -83,4 +88,20 @@ void drawSecondScreen(){
     display.setTextAlignment(TEXT_ALIGN_LEFT);
     display.drawString(0, 20, Temp);
     display.drawString(0, 40, Humi);
+}
+
+void getBatteryStatus()
+{
+    uint8_t powerPin_status = digitalRead(POWER_PIN);
+
+    delay(1);
+
+    if(powerPin_status == 1)
+    {
+        display_app.battery_status = BATTERY_USING;
+    }
+    if(powerPin_status == 0 )
+    {
+        display_app.battery_status = BATTERY_CHARGING;
+    }
 }
