@@ -18,7 +18,7 @@ SemaphoreHandle_t xSerialSemaphore;
 
 static TimerHandle_t reload_timer = NULL;
 bool update_valid = false;
-
+uint8_t upload_counter = 0;
 void TimerCallBack_handle(TimerHandle_t xTimer);
 void display_task(void *pvParameters);
 void measure_task(void *pvParameters);
@@ -75,15 +75,15 @@ void setup() {
 
   if(xSerialSemaphore == NULL)
   {
-    xSerialSemaphore = xSemaphoreCreateCounting(3,3);
+    xSerialSemaphore = xSemaphoreCreateCounting(3,1);
     if(xSerialSemaphore != NULL)
     {
       xSemaphoreGive((xSerialSemaphore));
     }
   }
-  xTaskCreatePinnedToCore(measure_task,"Task2", 20000, NULL, 5, &Task2, 1);
-  xTaskCreatePinnedToCore(display_task,"Task1", 5000, NULL, 5, &Task1, 0);
-  xTaskCreatePinnedToCore(upload_task,"Task3", 5000, NULL, 5, &Task3, 0);
+  xTaskCreatePinnedToCore(measure_task,"Task2", 6144, NULL, 5, &Task2, 0);
+  xTaskCreatePinnedToCore(display_task,"Task1", 4096, NULL, 5, &Task1, 0);
+  xTaskCreatePinnedToCore(upload_task,"Task3", 4096, NULL, 5, &Task3, 0);
   reload_timer = xTimerCreate("Reload Timeer", 60000/ portTICK_PERIOD_MS, pdTRUE, (void*)1, TimerCallBack_handle);
 
   //xTaskCreatePinnedToCore(power_task,"Task3", 10000, NULL, 3, &Task3, 2);
@@ -123,6 +123,9 @@ void display_task(void *pvParameters)
     if(xSemaphoreTake(xSerialSemaphore, (TickType_t) 10) == pdTRUE)
     {   
         //Serial.println("Display Task is running");
+#if DEBUGMODE
+        Serial.print(display_app.battery_status);
+#endif
         getBatteryStatus();
         OLED_clearScreen();
         drawFirstScreen();
@@ -244,44 +247,27 @@ void measure_task (void *pvParameters)
 void upload_task(void *pvParameters)
 {
   (void) pvParameters;
-  MEASURE_APP* pw = &measure_app;
+  
   for(;;)
   { 
+    
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 10 ) == pdTRUE )
     {
       //Serial.println("Measure Task is running");
+      int pm_10 = measure_app.pmsData.PMS_10;
+      int pm_2_5 = measure_app.pmsData.PMS_2_5;
+      float humi = measure_app.dht22Data.Humidity_update;
+      float temp = measure_app.dht22Data.Temperature_update;
+      int aqi_h = measure_app.pmsAQIcal.AQI_h;
       if(update_valid)
       { 
         if (display_app.wifi_status == 0)
-        {
-          WiFi.begin(ssid, password);
-          Serial.println("Waiting for WiFi");
-          int lastime = millis();
-          while (millis() - lastime <= 5000) {
-            if(WiFi.status() != WL_CONNECTED)
-            {
-              delay(500);
-              Serial.print(".");
-              display_app.wifi_status = 0;
-            }
-            else
-            {
-              display_app.wifi_status = 1;
-              Serial.println("WiFi Connected.");
-              Serial.print("IP Address: ");
-              Serial.println(WiFi.localIP());
-              break;
-            }
-          }
+        { 
+          WiFi.reconnect();
         }
         else
         {
-          int pm_10 = pw->pmsData.PMS_10;
-          int pm_2_5 = pw->pmsData.PMS_2_5;
-          float humi = pw->dht22Data.Humidity_update;
-          float temp = pw->dht22Data.Temperature_update;
-          int aqi_h = pw->pmsAQIcal.AQI_h;
-          char para[60];
+          char para[100];
           sprintf(para,"&field1=%d&field2=%d&field3=%d&field4=%f&field5=%f",pm_2_5,pm_10,aqi_h,temp,humi);
           String Url = UrlThingspeak + String(para);
           httpGETRequest(Url.c_str());
@@ -306,8 +292,10 @@ String httpGETRequest(const char* Url)
   String responseBody = "{}";
   if(responseCode > 0)
   {
+#if DEBUGMODE
     Serial.print("responseCode:");
     Serial.println(responseCode);
+#endif
     responseBody = http.getString();
   }
   else
@@ -323,9 +311,12 @@ void TimerCallBack_handle(TimerHandle_t xTimer)
 {
   if((uint32_t)pvTimerGetTimerID(xTimer) == 1)
   {
+#if DEBUGMODE
     Serial.println("Auto reload timer expried");
+#endif
     measure_app.timeData.one_min_expried = true;
     update_valid = true;
+    upload_counter++;
   }
 }
 void loop() {
