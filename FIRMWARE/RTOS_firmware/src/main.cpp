@@ -75,7 +75,7 @@ void setup() {
 
   if(xSerialSemaphore == NULL)
   {
-    xSerialSemaphore = xSemaphoreCreateCounting(3,3);
+    xSerialSemaphore = xSemaphoreCreateCounting(2,1);
     if(xSerialSemaphore != NULL)
     {
       xSemaphoreGive((xSerialSemaphore));
@@ -132,7 +132,7 @@ void display_task(void *pvParameters)
         drawSecondScreen();
         OLED_display();
         vTaskDelay(800);
-      xSemaphoreGive (xSerialSemaphore);
+        xSemaphoreGive(xSerialSemaphore);
     }
 
     vTaskDelay(10);
@@ -166,8 +166,8 @@ void measure_task (void *pvParameters)
   for(;;)
   { 
     // If the semaphore is not available, wait 5 ticks of the Scheduler to see if it becomes free.
-    if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 10 ) == pdTRUE )
-    { 
+    // if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 10 ) == pdTRUE )
+    // { 
       // PMS7003 Task Excute
       //vTaskDelay(300);
       //Serial.println("Measure Task is running");
@@ -234,9 +234,9 @@ void measure_task (void *pvParameters)
         p_aqi->PM10_Nowcast = p_aqi->getNowcast(p_aqi->PM10_c);
         p_aqi->getAQIh();
       }
-      xSemaphoreGive(xSerialSemaphore);
-    }
-    vTaskDelay(100);
+    //   xSemaphoreGive(xSerialSemaphore);
+    // }
+    vTaskDelay(10);
 
   }
 }
@@ -248,48 +248,39 @@ void upload_task(void *pvParameters)
   for(;;)
   { 
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 10 ) == pdTRUE )
-    {
+    { 
+      
       //Serial.println("Measure Task is running");
       if(update_valid)
       { 
         if (display_app.wifi_status == 0)
         {
-          WiFi.begin(ssid, password);
-          Serial.println("Waiting for WiFi");
-          int lastime = millis();
-          while (millis() - lastime <= 5000) {
-            if(WiFi.status() != WL_CONNECTED)
-            {
-              delay(500);
-              Serial.print(".");
-              display_app.wifi_status = 0;
-            }
-            else
-            {
-              display_app.wifi_status = 1;
-              Serial.println("WiFi Connected.");
-              Serial.print("IP Address: ");
-              Serial.println(WiFi.localIP());
-              break;
-            }
+          bool wifi_temp = WiFi.reconnect();
+          if(wifi_temp)
+          {
+            display_app.wifi_status = 1;
+          }
+          else
+          {
+            display_app.wifi_status = 0;
           }
         }
         else
         {
-          int pm_10 = pw->pmsData.PMS_10;
-          int pm_2_5 = pw->pmsData.PMS_2_5;
-          float humi = pw->dht22Data.Humidity_update;
-          float temp = pw->dht22Data.Temperature_update;
-          int aqi_h = pw->pmsAQIcal.AQI_h;
-          char para[60];
-          sprintf(para,"&field1=%d&field2=%d&field3=%d&field4=%f&field5=%f",pm_2_5,pm_10,aqi_h,temp,humi);
+          uint16_t *pm_10 = &pw->pmsData.PMS_10;
+          uint16_t *pm_2_5 = &pw->pmsData.PMS_2_5;
+          float* humi = &pw->dht22Data.Humidity_update;
+          float* temp = &pw->dht22Data.Temperature_update;
+          int* aqi_h = &pw->pmsAQIcal.AQI_h;
+          char para[100];
+          sprintf(para,"&field1=%d&field2=%d&field3=%d&field4=%f&field5=%f",*pm_2_5,*pm_10,*aqi_h,*temp,*humi);
+          //Serial.print(para);
           String Url = UrlThingspeak + String(para);
           httpGETRequest(Url.c_str());
           update_valid = false;
         }
-
       }
-
+      
       xSemaphoreGive(xSerialSemaphore);
     }
     vTaskDelay(100);

@@ -5,10 +5,10 @@ PMS::DATA data;
 
 DHT dht;
 
-static void PMS_Init(){
+void PMS_Init(){
     pms.passiveMode();
 }
-static void PMS_ReadData()
+void PMS_ReadData()
 {   
     MEASURE_APP *pw = &measure_app;
     pms.requestRead();
@@ -34,7 +34,7 @@ static void PMS_ReadData()
     }
 }
 
-static uint16_t PMS_Get1Hour_Data(uint16_t* PM_Data)
+uint16_t PMS_Get1Hour_Data(uint16_t* PM_Data)
 {
   float c = 0;
   for(int i = 0; i < 60; i++)
@@ -48,7 +48,7 @@ static uint16_t PMS_Get1Hour_Data(uint16_t* PM_Data)
   return round(c);
 }
 
-static float PMS_GetNowcast(uint16_t* PM_C)
+float PMS_GetNowcast(uint16_t* PM_C)
 {
   float Nowcast = 0;
   float w = 0, w_temp = 0;
@@ -192,14 +192,14 @@ void PMS_GetAQIh()
     }
   }
 }
-static void DHT_Init() {
+void DHT_Init() {
   dht.setup(DHT_PIN);
 }
-static void DHT_Delay() {
+void DHT_Delay() {
   delay(dht.getMinimumSamplingPeriod());
 }
 
-static void DHT_GetStatus() {
+void DHT_GetStatus() {
   MEASURE_APP* pw = &measure_app;
   if(dht.getTemperature() < 100)
   {

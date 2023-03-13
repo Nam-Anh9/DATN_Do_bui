@@ -57,13 +57,14 @@ void drawTaskbar(){
 }
 void drawFirstScreen(){
     drawTaskbar();
-    MEASURE_APP *pw = &measure_app;
+    PMS_DATA *pms_data = &measure_app.pmsData;
+    PMS_AQI_CAL *pms_aqi = &measure_app.pmsAQIcal;
     String PM_10 = "PM10:";
     String PM_2_5 = "PM2.5:";
     String AQI = "AQI:";
-    PM_10 += pw->pmsData.PMS_10;
-    PM_2_5 += pw->pmsData.PMS_2_5;
-    AQI += pw->pmsAQIcal.AQI_h;
+    PM_10 += pms_data->PMS_10;
+    PM_2_5 += pms_data->PMS_2_5;
+    AQI += pms_aqi->AQI_h;
     display.setFont(ArialMT_Plain_16);
 
     // The coordinates define the left starting point of the text
@@ -75,11 +76,11 @@ void drawFirstScreen(){
 
 void drawSecondScreen(){
     drawTaskbar();
-    MEASURE_APP* pw = &measure_app;
+    DHT22_DATA* dht_data = &measure_app.dht22Data;
     String Temp = "Temp: ";
     String Humi = "Humi: ";
-    Temp += pw->dht22Data.Temperature_update;
-    Humi += pw->dht22Data.Humidity_update;
+    Temp += dht_data->Temperature_update;
+    Humi += dht_data->Humidity_update;
     Temp += " oC";
     Humi += " %";
     display.setFont(ArialMT_Plain_16);
