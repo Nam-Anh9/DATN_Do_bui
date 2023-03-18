@@ -33,40 +33,41 @@ void setup() {
   EEPROM.begin(FLASH_MAXBYTE_USED);
   pinMode(POWER_PIN, INPUT);
   pinMode(BATTERY_PIN, INPUT);
-  // WiFi.mode(WIFI_AP_STA);
-  // /* start SmartConfig */
-  // WiFi.beginSmartConfig();
+  WiFi.mode(WIFI_AP_STA);
+  /* start SmartConfig */
+  WiFi.beginSmartConfig();
  
-  // /* Wait for SmartConfig packet from mobile */
-  // Serial.println("Waiting for SmartConfig.");
-  // while (!WiFi.smartConfigDone()) {
-  //   delay(500);
-  //   Serial.print(".");
-  // }
-  // Serial.println("");
-  // Serial.println("SmartConfig done.");
+  /* Wait for SmartConfig packet from mobile */
+  Serial.println("Waiting for SmartConfig.");
+  while (!WiFi.smartConfigDone()) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("SmartConfig done.");
  
   /* Wait for WiFi to connect to AP */
   display_app.reg_b = READ_PERI_REG(SENS_SAR_READ_CTRL2_REG);   //Save ADC2 reg address
   WiFi.begin(ssid, password);
   Serial.println("Waiting for WiFi");
-  int lastime = millis();
-  while (millis() - lastime <= 5000) {
-    if(WiFi.status() != WL_CONNECTED)
-    {
-      delay(500);
-      Serial.print(".");
-      display_app.wifi_status = 0;
-    }
-    else
-    {
-      display_app.wifi_status = 1;
-      Serial.println("WiFi Connected.");
-      Serial.print("IP Address: ");
-      Serial.println(WiFi.localIP());
-      break;
-    }
-  }
+  // int lastime = millis();
+  // while (millis() - lastime <= 5000) {
+  //   if(WiFi.status() != WL_CONNECTED)
+  //   {
+  //     WiFi.
+  //     delay(500);
+  //     Serial.print(".");
+  //     display_app.wifi_status = 0;
+  //   }
+  //   else
+  //   {
+  //     display_app.wifi_status = 1;
+  //     Serial.println("WiFi Connected.");
+  //     Serial.print("IP Address: ");
+  //     Serial.println(WiFi.localIP());
+  //     break;
+  //   }
+  // }
   // Serial.println("");
   // Serial.println("WiFi connected.");
   // Serial.println("IP address: ");

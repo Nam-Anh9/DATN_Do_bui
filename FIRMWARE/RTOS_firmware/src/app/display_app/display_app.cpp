@@ -38,7 +38,7 @@ void OLED_drawBatteryLogo(){
             display.drawXbm(20, 0, Batery_Logo_width,Batery_Logo_height, Batery_Logo_bits);
             break;
         case BATTERY_CHARGING:
-            display.drawXbm(20, 0, Batery_Logo_width,Batery_Logo_height, Battery_Charging_Logo_bits);
+            display.drawXbm(20, 0, Charging_Logo_width,Charging_Logo_height, Battery_Charging_Logo_bits);
             break;
         default:
             break;
