@@ -36,6 +36,7 @@ void OLED_drawBatteryLogo(){
     {
         case BATTERY_USING:
             display.drawXbm(20, 0, Batery_Logo_width,Batery_Logo_height, Batery_Logo_bits);
+            //display.drawXbm(20, 0, Charging_Logo_width,Charging_Logo_height, Battery_Charging_Logo_bits);
             break;
         case BATTERY_CHARGING:
             display.drawXbm(20, 0, Charging_Logo_width,Charging_Logo_height, Battery_Charging_Logo_bits);
@@ -94,15 +95,17 @@ void drawSecondScreen(){
 void getBatteryStatus()
 {
     uint8_t powerPin_status = digitalRead(POWER_PIN);
-
+    Serial.println(powerPin_status);
     delay(1);
 
-    if(powerPin_status == 1)
+    if(powerPin_status == 0)
     {
         display_app.battery_status = BATTERY_USING;
+        Serial.println("Batterry status: Using");
     }
-    if(powerPin_status == 0 )
+    if(powerPin_status == 1 )
     {
         display_app.battery_status = BATTERY_CHARGING;
+        Serial.println("Batterry status: Charging");
     }
 }
