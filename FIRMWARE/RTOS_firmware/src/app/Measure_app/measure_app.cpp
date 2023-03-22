@@ -205,9 +205,11 @@ void DHT_GetStatus() {
   {
     pw->dht22Data.Humidity = dht.getHumidity();
     pw->dht22Data.Temperature = dht.getTemperature();
+
+    pw->dht22Data.Humidity_update = 1.36741*pw->dht22Data.Humidity - 1.97591;
+    pw->dht22Data.Temperature_update = 0.57399*pw->dht22Data.Temperature + 9.54857;
   }
-  pw->dht22Data.Humidity_update = -0.7563*pw->dht22Data.Humidity + 105.3394;
-  pw->dht22Data.Temperature_update = 0.269821*pw->dht22Data.Temperature + 18.14026;
+
 }
 
 
