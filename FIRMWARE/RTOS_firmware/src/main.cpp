@@ -31,8 +31,8 @@ void display_task(void *pvParameters);
 void measure_task(void *pvParameters);
 void upload_task(void *pvParameters);
 
-const char* ssid = "Song Quynh";
-const char* password = "songquynh25042112";
+const char* ssid = "iPhone";
+const char* password = "abc123456789";
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -40,20 +40,20 @@ void setup() {
   EEPROM.begin(FLASH_MAXBYTE_USED);
   pinMode(POWER_PIN, INPUT);
   pinMode(BATTERY_PIN, INPUT);
-  WiFi.mode(WIFI_AP_STA);
-  /* start SmartConfig */
-  WiFi.beginSmartConfig();
+  // WiFi.mode(WIFI_AP_STA);
+  // /* start SmartConfig */
+  // WiFi.beginSmartConfig();
  
-  /* Wait for SmartConfig packet from mobile */
-  Serial.println("Waiting for SmartConfig.");
-  while (!WiFi.smartConfigDone()) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("SmartConfig done.");
+  // /* Wait for SmartConfig packet from mobile */
+  // Serial.println("Waiting for SmartConfig.");
+  // while (!WiFi.smartConfigDone()) {
+  //   delay(500);
+  //   Serial.print(".");
+  // }
+  // Serial.println("");
+  // Serial.println("SmartConfig done.");
  
-  /* Wait for WiFi to connect to AP */
+  // /* Wait for WiFi to connect to AP */
   display_app.reg_b = READ_PERI_REG(SENS_SAR_READ_CTRL2_REG);   //Save ADC2 reg address
   WiFi.begin(ssid, password);
   Serial.println("Waiting for WiFi");
@@ -130,6 +130,10 @@ void display_task(void *pvParameters)
     if(xSemaphoreTake(xSerialSemaphore, (TickType_t) 10) == pdTRUE)
     {   
         //Serial.println("Display Task is running");
+        if(WiFi.status() != WL_CONNECTED)
+        {
+          display_app.wifi_status = 0;
+        }
         getBatteryStatus();
         OLED_clearScreen();
         drawFirstScreen();
