@@ -4,6 +4,7 @@
 #include "app/measure_app/measure_app.h"
 #include "app/flash_app/flash_app.h"
 #include "HTTPClient.h"
+#include "HTTPUpdate.h"
 
 #define   DEBUGMODE   0
 
@@ -11,8 +12,14 @@ TaskHandle_t Task1;
 TaskHandle_t Task2;
 TaskHandle_t Task3;
 
+void update_FOTA();
+String getChipId();
+
 String UrlThingspeak = "https://api.thingspeak.com/update?api_key=PD6XF5Q7ZZ75D2OA";
 String httpGETRequest(const char* Url);
+
+String version = "1.0";
+String key = "573db5bf-91b7-4555-884b-67f77a9cc7fd";
 
 SemaphoreHandle_t xSerialSemaphore;
 
@@ -50,24 +57,23 @@ void setup() {
   display_app.reg_b = READ_PERI_REG(SENS_SAR_READ_CTRL2_REG);   //Save ADC2 reg address
   WiFi.begin(ssid, password);
   Serial.println("Waiting for WiFi");
-  // int lastime = millis();
-  // while (millis() - lastime <= 5000) {
-  //   if(WiFi.status() != WL_CONNECTED)
-  //   {
-  //     WiFi.
-  //     delay(500);
-  //     Serial.print(".");
-  //     display_app.wifi_status = 0;
-  //   }
-  //   else
-  //   {
-  //     display_app.wifi_status = 1;
-  //     Serial.println("WiFi Connected.");
-  //     Serial.print("IP Address: ");
-  //     Serial.println(WiFi.localIP());
-  //     break;
-  //   }
-  // }
+  int lastime = millis();
+  while (millis() - lastime <= 5000) {
+    if(WiFi.status() != WL_CONNECTED)
+    {
+      delay(500);
+      Serial.print(".");
+      display_app.wifi_status = 0;
+    }
+    else
+    {
+      display_app.wifi_status = 1;
+      Serial.println("WiFi Connected.");
+      Serial.print("IP Address: ");
+      Serial.println(WiFi.localIP());
+      break;
+    }
+  }
   // Serial.println("");
   // Serial.println("WiFi connected.");
   // Serial.println("IP address: ");
@@ -250,8 +256,8 @@ void upload_task(void *pvParameters)
   { 
     if ( xSemaphoreTake( xSerialSemaphore, ( TickType_t ) 10 ) == pdTRUE )
     { 
-      
       //Serial.println("Measure Task is running");
+
       if(update_valid)
       { 
         if (display_app.wifi_status == 0)
@@ -278,6 +284,11 @@ void upload_task(void *pvParameters)
           //Serial.print(para);
           String Url = UrlThingspeak + String(para);
           httpGETRequest(Url.c_str());
+
+          Serial.print("Ver: ");
+          Serial.println(version);
+          Serial.println("Check update");
+          update_FOTA();
           update_valid = false;
         }
       }
@@ -319,6 +330,24 @@ void TimerCallBack_handle(TimerHandle_t xTimer)
     measure_app.timeData.one_min_expried = true;
     update_valid = true;
   }
+}
+
+String getChipId()
+{
+  String ChipIdHex = String((uint32_t)(ESP.getEfuseMac() >> 32), HEX);
+  ChipIdHex += String((uint32_t)ESP.getEfuseMac(), HEX);
+  return ChipIdHex;
+}
+ 
+void update_FOTA()
+{
+  String url = "http://otadrive.com/deviceapi/update?";
+  url += "k=" + key;
+  url += "&v=" + version;
+  url += "&s=" + getChipId(); // định danh thiết bị trên Cloud
+ 
+  WiFiClient client;
+  httpUpdate.update(client, url, version);
 }
 void loop() {
   // put your main code here, to run repeatedly:
